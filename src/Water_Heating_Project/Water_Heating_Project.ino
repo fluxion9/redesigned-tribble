@@ -12,7 +12,7 @@ OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
 unsigned long lastTime = 0;
 String dataString, localTime;
-float temp1, temp2;
+float temp1;
 void epochToLocal(unsigned long unixEpoch)
 {
   long second = unixEpoch % 60;
@@ -30,16 +30,13 @@ void measureTemperatures()
 {
   sensors.requestTemperatures();
   float temp1C = sensors.getTempCByIndex(0);
-  float temp2C = sensors.getTempCByIndex(1);
-  if (temp1C != DEVICE_DISCONNECTED_C || temp2C != DEVICE_DISCONNECTED_C)
+  if (temp1C != DEVICE_DISCONNECTED_C)
   {
     temp1 = temp1C;
-    temp2 = temp2C;
   }
   else
   {
     temp1 = 0;
-    temp2 = 0;
   }
 }
 void setup() {
@@ -48,7 +45,7 @@ void setup() {
     while (1);
   }
   sensors.begin();
-  dataString = "Temp1 (*C),Temp2 (*C),Voltage (V),Current (I),Power (W),Time Stamp";
+  dataString = "Temp1 (*C),Voltage (V),Current (I),Power (W),Time Stamp";
   File dataFile = SD.open("datalog2.csv", FILE_WRITE);
   if (dataFile) {
     dataFile.println(dataString);
@@ -68,7 +65,6 @@ void loop() {
     float p = v * i;
     measureTemperatures();
     dataString += String(temp1, 1) + ",";
-    dataString += String(temp2, 1) + ",";
     dataString += String(v, 0) + ",";
     dataString += String(i, 0) + ",";
     dataString += String(p, 0) + ",";
@@ -84,7 +80,7 @@ void loop() {
     }
     lastTime = millis();
   }
-  float avgTemp = (temp1 + temp2) / 2.0;
+  float avgTemp = (temp1 + temp1) / 2.0;
   if(avgTemp >= 80.0)
   {
     digitalWrite(boiler, 0);
