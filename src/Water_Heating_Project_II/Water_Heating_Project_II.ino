@@ -9,12 +9,16 @@
 #define luxin A5
 #define flowIn A3
 #define boiler 9
+#define on 1
+#define off 0
 unsigned long dumpInterval = 66000;
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
 unsigned long lastTime = 0;
 String dataString, localTime;
 float temp1, temp2, temp3, temp4;
+
+bool state = off;
 void epochToLocal(unsigned long unixEpoch)
 {
   long second = unixEpoch % 60;
@@ -122,7 +126,7 @@ void loop() {
     dataString += String(temp3, 1) + ",";
     dataString += String(temp4, 1) + ",";
     dataString += String(v, 0) + ",";
-    dataString += String(i, 0) + ",";
+    dataString += String(i, 2) + ",";
     dataString += String(p, 0) + ",";
     dataString += String(irrad) + ",";
     dataString += String(rate) + ",";
@@ -139,13 +143,16 @@ void loop() {
     }
     lastTime = millis();
   }
-  float avgTemp = (temp1 + temp2) / 2.0;
-  if(avgTemp >= 70.0)
+  float avgTemp = (temp1 + temp2 + temp3 + temp4) / 4.0;
+  if(avgTemp >= 70.0 && state == on)
   {
     digitalWrite(boiler, 0);
+    state = off;
   }
-  else {
+  else if(avgTemp <= 62.0 && state == off)
+  {
     digitalWrite(boiler, 1);
+    state = on;
   }
   dataString = "";
 }

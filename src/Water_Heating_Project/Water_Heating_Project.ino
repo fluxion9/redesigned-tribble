@@ -3,11 +3,13 @@
 #include <SPI.h>
 #include <SD.h>
 
-#define chipSelect 8
+#define chipSelect 7
 #define ONE_WIRE_BUS 9
 #define cin A3
 #define vin A5
-
+#define on 100
+#define off 200
+byte state = off;
 unsigned long dumpInterval = 68000;
 #define boiler 10
 OneWire oneWire(ONE_WIRE_BUS);
@@ -47,13 +49,13 @@ void setup() {
     while (1);
   }
   sensors.begin();
-  dataString = "Temp1 (*C),Voltage (V),Current (I),Power (W),Time Stamp";
+  dataString = "Temp1 (*C),Voltage (V),Current (I),Power (W),Time Stamp (DD:HH:MM:SS)";
   File dataFile = SD.open("datalog2.csv", FILE_WRITE);
   if (dataFile) {
     dataFile.println(dataString);
     dataFile.close();
   }
-  else {
+  else{
     ;
   }
 }
@@ -68,7 +70,7 @@ void loop() {
     measureTemperatures();
     dataString += String(temp1, 1) + ",";
     dataString += String(v, 0) + ",";
-    dataString += String(i, 0) + ",";
+    dataString += String(i, 2) + ",";
     dataString += String(p, 0) + ",";
     epochToLocal(millis() / 1000);
     dataString += localTime;
@@ -82,15 +84,17 @@ void loop() {
     }
     lastTime = millis();
   }
-  float avgTemp = (temp1 + temp1) / 2.0;
-  if(avgTemp >= 80.0)
+  float avgTemp = temp1;
+  if (avgTemp >= 70.0 && state == on)
   {
     digitalWrite(boiler, 0);
+    state = off;
   }
-  else {
+  else if (avgTemp <= 68.0 && state == off)
+  {
     digitalWrite(boiler, 1);
+    state = on;
   }
-  dataString = "";
 }
 float measureVoltageAC(int pin)
 {
@@ -130,7 +134,7 @@ double measureCurrentAC()
 float getVPP()
 {
   float result;
-  int readValue;             //value read from the sensor
+  int readValue;            //value read from the sensor
   int maxValue = 0;          // store max value here
   int minValue = 1024;          // store min value here
 
